@@ -3,99 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>爆单符</title>
+    <title>业务查询</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
         }
 
-        body {
-            min-height: 100vh;
+        /* 顶部切换栏 */
+        .tab-bar {
             display: flex;
-            justify-content: center;
-            align-items: center;
-            background: linear-gradient(-45deg, #000, #2c1810, #5a2a12, #8b4513);
-            background-size: 400% 400%;
-            animation: bgFlow 10s ease infinite;
-            overflow: hidden;
+            gap: 10px;
+            padding: 14px 20px;
+            background: #fff;
+            border-bottom: 1px solid #eee;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
         }
 
-        @keyframes bgFlow {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+        /* 切换按钮 */
+        .tab-btn {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #f9f9f9;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
         }
 
-        /* 爆单符主体 */
-        .talisman {
-            width: 320px;
-            height: 480px;
-            background: linear-gradient(145deg, #fff8e1, #ffebcd);
-            border-radius: 12px;
-            border: 3px solid #ffd700;
-            position: relative;
-            box-shadow: 0 0 30px gold, 0 0 60px orange, 0 0 90px darkorange;
-            animation: glow 3s ease-in-out infinite alternate;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        .tab-btn.active {
+            background: #0085d0;
+            color: #fff;
+            border-color: #0085d0;
         }
 
-        @keyframes glow {
-            0% { box-shadow: 0 0 30px gold, 0 0 60px orange; }
-            100% { box-shadow: 0 0 50px gold, 0 0 100px darkorange; }
+        .tab-btn:hover {
+            border-color: #0085d0;
         }
 
-        /* 核心大字 */
-        .text {
-            font-size: 90px;
-            font-weight: 900;
-            color: #d92121;
-            text-shadow: 0 0 15px #ff0000, 0 0 30px #ff4500;
-            animation: pulse 2s infinite alternate;
-            writing-mode: vertical-rl;
-            letter-spacing: 10px;
-        }
-
-        @keyframes pulse {
-            0% { filter: brightness(1); }
-            100% { filter: brightness(1.6); }
-        }
-
-        /* 星光粒子 */
-        .star {
-            position: absolute;
-            width: 8px;
-            height: 8px;
-            background: gold;
-            border-radius: 50%;
-            animation: float 4s infinite linear;
-        }
-
-        @keyframes float {
-            0%,100% { transform: translateY(0) scale(0.8); opacity: 0.7; }
-            50% { transform: translateY(-25px) scale(1.2); opacity: 1; }
+        /* iframe 铺满页面 */
+        #pageFrame {
+            width: 100%;
+            height: calc(100vh - 60px);
+            border: none;
+            display: block;
         }
     </style>
 </head>
 <body>
-    <div class="talisman">
-        <div class="text">爆单符</div>
-    </div>
 
-    <script>
-        // 生成浮动星光
-        const box = document.querySelector('.talisman');
-        for(let i = 0; i < 25; i++){
-            let star = document.createElement('div');
-            star.className = 'star';
-            star.style.left = Math.random() * 320 + 'px';
-            star.style.top = Math.random() * 480 + 'px';
-            star.style.animationDelay = Math.random() * 4 + 's';
-            box.appendChild(star);
-        }
-    </script>
+<!-- ====================== 你只需要改这里 ====================== -->
+<div class="tab-bar">
+
+
+    <button class="tab-btn" data-file="cha/yd.html">深圳查询</button>
+</div>
+<!-- =========================================================== -->
+
+<!-- 页面容器（iframe 永不影响子页面功能） -->
+<iframe id="pageFrame" src=""></iframe>
+
+<script>
+    // 默认打开的页面
+    const defaultFile = "cha/yd.html";
+
+    // 加载页面（带时间戳防缓存 + 不破坏任何功能）
+    function loadPage(fileName) {
+        const frame = document.getElementById('pageFrame');
+        // 强制时间戳，防缓存
+        const timestamp = Date.now();
+        frame.src = `/${fileName}?t=${timestamp}`;
+    }
+
+    // 绑定选项卡点击
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const file = btn.getAttribute('data-file');
+            loadPage(file);
+        });
+    });
+
+    // 初始加载
+    window.addEventListener('DOMContentLoaded', () => {
+        loadPage(defaultFile);
+    });
+</script>
+
 </body>
 </html>
