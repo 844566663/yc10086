@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>深圳业务综合查询</title>
+    <style>
+        :root { --primary: #0085d0; --secondary: #eef7ff; --accent: #f60; --text-main: #333; --text-sub: #666; }
+        body { font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; background: #f0f2f5; margin: 0; padding: 20px 10px; color: var(--text-main); }
+        
+        .container { max-width: 1200px; margin: 0 auto; display: flex; gap: 20px; align-items: flex-start; }
+        .left-panel { flex: 0 0 380px; width: 380px; }
+        .right-panel { flex: 1; min-width: 0; }
+
+        @media (max-width: 900px) {
+            .container { flex-direction: column; }
+            .left-panel, .right-panel { width: 100%; flex: none; }
+        }
+        
+        .card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        .search-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: var(--primary); }
+        .input-group { margin-bottom: 12px; }
+        .input-group label { display: block; font-size: 12px; color: var(--text-sub); margin-bottom: 4px; }
+        .input-group input { width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
+        .input-group input[disabled] { background-color: #f5f5f5; color: #666; cursor: not-allowed; }
+        
+        .btn-query { 
+            width: 100%; 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            padding: 14px; 
+            border-radius: 8px; 
+            font-size: 16px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: all 0.3s;
+        }
+        .btn-query:disabled { 
+            background: #ccc; 
+            cursor: not-allowed; 
+            opacity: 0.8; 
+            pointer-events: none; 
+        }
+        .btn-stop { 
+            background: #dc3545 !important; 
+            pointer-events: auto !important; 
+            cursor: pointer !important;
+        }
+        
+        .official-header { border-left: 5px solid var(--primary); padding-left: 15px; line-height: 1.8; }
+        .info-row { display: flex; justify-content: flex-start; margin-bottom: 4px; border-bottom: 1px dashed #f0f0f0; padding-bottom: 4px; }
+        .info-label { width: 90px; color: var(--text-sub); flex-shrink: 0; }
+        .info-val { font-weight: 500; }
+        .price-highlight { color: var(--accent); font-weight: bold; }
+        .trend-box { background: #fafafa; border-radius: 8px; padding: 10px; margin-top: 10px; font-size: 13px; border: 1px solid #f0f0f0;}
+        .trend-title { font-weight: bold; color: var(--primary); margin-bottom: 5px; font-size: 12px; border-bottom: 1px solid #e8e8e8; padding-bottom: 4px;}
+
+        .item-l1 { background: #fff; margin-top: 10px; border-radius: 8px; border: 1px solid #eee; overflow: hidden; }
+        .item-l1-head { background: var(--secondary); padding: 12px 15px; border-bottom: 1px solid #e0eaff; }
+        .sub-items { padding-left: 20px; }
+        .item-l2, .item-l3 { padding: 10px 15px; border-bottom: 1px solid #f9f9f9; position: relative; }
+        .item-l2::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: #d0e4ff; }
+        .item-l3 { padding-left: 30px; }
+        .item-l3::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: #e0e0e0; }
+        
+        .item-main-line { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; line-height: 1.4; }
+        .tag { font-size: 11px; padding: 1px 6px; border-radius: 4px; }
+        .tag-active { background: #e6ffed; color: #28a745; border: 1px solid #b7eb8f; }
+        .tag-pending { background: #fff7e6; color: #fa8c16; border: 1px solid #ffd591; }
+        .tag-expired { background: #f5f5f5; color: #999; border: 1px solid #e0e0e0; }
+        .price-tag { color: var(--accent); font-weight: bold; font-size: 14px; }
+        .price-free { color: #aaa; font-size: 12px; }
+        .effect-time-inline { font-size: 12px; color: #888; font-weight: normal; }
+
+        #toast { 
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%); 
+            background: rgba(220, 53, 69, 0.9); color: #fff; padding: 12px 24px; 
+            border-radius: 8px; z-index: 1000; display: none; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-size: 14px; text-align: center;
+            transition: opacity 0.3s ease;
+        }
+
+        #loading { display: none; text-align: center; padding: 30px; color: var(--primary); font-weight: bold; }
+        .spinning { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(0,133,208,0.3); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; vertical-align: middle; margin-right: 8px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .family-box { margin-top: 15px; }
+        .family-item { padding: 8px 0; border-bottom: 1px dashed #f0f0f0; font-size: 13px; }
+        .family-name { font-weight: bold; color: var(--primary); margin-bottom: 4px; }
+        .family-member { color: var(--text-sub); margin-left: 8px; line-height: 1.5; }
+
+        .mutex-box {
+            background-color: #fff8f8;
+            border: 1px solid #ffcccc;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .mutex-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #d93025;
+            margin-bottom: 10px;
+            border-left: 4px solid #d93025;
+            padding-left: 10px;
+        }
+        .mutex-info {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed #ffcccc;
+        }
+        .mutex-item {
+            color: #d93025;
+            font-weight: 500;
+            padding: 5px 0;
+            font-size: 14px;
+        }
+        .mutex-empty {
+            color: #666;
+            font-size: 14px;
+            padding: 5px 0;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            display: none;
+        }
+        .modal-box {
+            background: #fff;
+            width: 90%;
+            max-width: 420px;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            position: relative;
+        }
+        .modal-icon {
+            width: 50px;
+            height: 50px;
+            background: #fff2f2;
+            color: #f53f3f;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin: 0 auto 16px;
+        }
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 12px;
+        }
+        .modal-content {
+            font-size: 15px;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        .modal-close {
+            background: #0085d0;
+            color: #fff;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        /* 拼图验证弹窗 */
+        #puzzleVerifyModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .puzzle-box {
+            background: #fff;
+            width: 90%;
+            max-width: 340px;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            user-select: none;
+        }
+        .puzzle-title {
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .canvas-wrap {
+            position: relative;
+            width: 300px;
+            height: 150px;
+            margin: 0 auto 10px;
+        }
+        #puzzleBg {
+            position: absolute;
+            left: 0;
+            top: 0;
+            border-radius: 8px;
+        }
+        #puzzleBlock {
+            position: absolute;
+            left: 0;
+            top: 0;
+            border-radius: 8px;
+        }
+        .slider-wrap {
+            position: relative;
+            width: 300px;
+            height: 40px;
+            background: #eee;
+            border-radius: 20px;
+            margin: 0 auto;
+        }
+        .slider-progress {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background: #e6f7ff;
+            border-radius: 20px;
+            width: 0;
+        }
+        .slider-btn {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 40px;
+            height: 40px;
+            background: #0085d0;
+            border-radius: 50%;
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: bold;
+        }
+        .puzzle-tip {
+            text-align: center;
+            font-size: 13px;
+            color: #666;
+            margin-top: 10px;
+        }
+        .puzzle-close {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #999;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="modal-overlay" id="warningModal">
+    <div class="modal-box">
+        <div class="modal-icon">!</div>
+        <div class="modal-title">办理风险提醒</div>
+        <div class="modal-content" id="modalText">客户已停机或余额为负数，会导致办理失败，请提醒客户先充值后办理。</div>
+        <button class="modal-close" onclick="closeWarningModal()">我知道了</button>
+    </div>
+</div>
+
+<!-- 拼图验证弹窗 -->
+<div id="puzzleVerifyModal">
+    <div class="puzzle-box">
+        <div class="puzzle-title">请完成拼图验证</div>
+        <div class="canvas-wrap">
+            <canvas id="puzzleBg" width="300" height="150"></canvas>
+            <canvas id="puzzleBlock" width="300" height="150"></canvas>
+        </div>
+        <div class="slider-wrap">
+            <div class="slider-progress" id="sliderProgress"></div>
+            <div class="slider-btn" id="sliderBtn">→</div>
+        </div>
+        <div class="puzzle-tip" id="puzzleTip">向右拖动滑块，将拼图还原</div>
+        <div class="puzzle-close" onclick="closePuzzleVerify()">取消</div>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<div class="container">
+    <div class="left-panel">
+        <div class="card">
+            <div class="search-title">深圳业务综合查询</div>
+            <div class="input-group">
+                <label>API TOKEN</label>
+                <input type="text" id="token" value="" disabled>
+            </div>
+            <div class="input-group">
+                <label>号码</label>
+                <input type="text" id="phone" placeholder="请输入手机号">
+            </div>
+            <button class="btn-query" id="queryBtn" onclick="showPuzzleVerify()">查询</button>
+        </div>
+        <div id="loading"><span class="spinning"></span> <span id="loadingText">正在查询中...</span></div>
+        <div id="resultLeft" style="display:none;">
+            <div class="card">
+                <div class="official-header" id="officialHeader"></div>
+            </div>
+            <div class="card" id="familyCard" style="display:none;">
+                <div class="search-title" style="font-size:16px; margin-bottom:10px;">家庭/亲情网信息</div>
+                <div id="familyList"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="right-panel">
+        <div id="resultRight" style="display:none;">
+            <div class="card" style="min-height: 500px;">
+                <div id="mutexSection"></div>
+                <div id="productList"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const MAX_RETRIES = 500;
+const NOW_TIMESTAMP = Date.now();
+let toastLock = false;
+let toastTimer = null;
+let stopQuery = false;
+
+let mutexKeywords = [];
+let mutexLoadStatus = "";
+
+// ========== 拼图验证全局变量 ==========
+let bgCanvas, bgCtx, blockCanvas, blockCtx;
+let blockSize = 50;
+let targetX = 200;
+let startX = 0;
+let isDragging = false;
+let imgList = [
+    'https://picsum.photos/id/237/300/150',
+    'https://picsum.photos/id/238/300/150',
+    'https://picsum.photos/id/239/300/150'
+];
+
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        const response = await fetch('/TOKEN/szyd.html', { 
+            cache: 'no-store',
+            headers: { 'Content-Type': 'text/plain' }
+        });
+        if (response.ok) {
+            const tokenFromFile = (await response.text()).trim();
+            document.getElementById('token').value = tokenFromFile;
+            if (tokenFromFile) showToast('TOKEN 加载成功！', true);
+            else showToast('TOKEN 文件内容为空');
+        } else {
+            showToast('获取 TOKEN 失败：文件不存在');
+        }
+    } catch (e) {
+        showToast('获取 TOKEN 失败：网络异常');
+    }
+
+    initPuzzle();
+});
+
+function closeWarningModal() {
+    document.getElementById('warningModal').style.display = 'none';
+}
+function showRiskModal() {
+    document.getElementById('warningModal').style.display = 'flex';
+}
+
+async function reloadMutexKeywords() {
+    mutexKeywords = [];
+    mutexLoadStatus = "";
+    try {
+        const response = await fetch(`/fshuchi.html?t=${Date.now()}`, { cache: 'no-store' });
+        if (response.ok) {
+            const text = await response.text();
+            mutexKeywords = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+            mutexLoadStatus = `✅ 成功读取互斥项列表，共 ${mutexKeywords.length} 个关键词`;
+        } else {
+            mutexLoadStatus = "❌ 读取失败：fshuchi.html 文件不存在";
+        }
+    } catch (e) {
+        mutexLoadStatus = "❌ 读取失败：网络或文件异常";
+        mutexKeywords = [];
+    }
+}
+
+function matchMutexKeywords(productList) {
+    if (!mutexKeywords.length || !productList.length) return [];
+    const matchedItems = [];
+    productList.forEach(item => {
+        const title = (item.prodName || '').toLowerCase();
+        mutexKeywords.forEach(keyword => {
+            const lowerKeyword = keyword.toLowerCase();
+            if (lowerKeyword && title.includes(lowerKeyword)) {
+                const status = getProdStatus(item.startDate, item.endDate).text;
+                matchedItems.push({ title: item.prodName, status: status, keyword: keyword });
+            }
+        });
+    });
+    return [...new Map(matchedItems.map(item => [`${item.title}-${item.keyword}`, item])).values()];
+}
+
+function renderMutexSection(allItems) {
+    const matchedMutex = matchMutexKeywords(allItems);
+    const mutexDiv = document.getElementById('mutexSection');
+    let mutexHtml = '<div class="mutex-box"><div class="mutex-title">可能导致办理失败的互斥项目</div>';
+    mutexHtml += `<div class="mutex-info">${mutexLoadStatus}</div>`;
+    if (matchedMutex.length > 0) {
+        matchedMutex.forEach(item => {
+            mutexHtml += `<div class="mutex-item">• ${item.title}（状态：${item.status}）</div>`;
+        });
+    } else {
+        mutexHtml += '<div class="mutex-empty">未查询到可能导致办理失败的互斥项目，如果仍然办理失败，请发客户号码至项目群。</div>';
+    }
+    mutexHtml += '</div>';
+    mutexDiv.innerHTML = mutexHtml;
+}
+
+function showToast(msg, isSuccess = false) {
+    const toast = document.getElementById('toast');
+    if (toastLock) { toast.innerText = msg; return; }
+    if (toastTimer) clearTimeout(toastTimer);
+    toast.innerText = msg;
+    toast.style.background = isSuccess ? 'rgba(40, 167, 69, 0.9)' : 'rgba(220, 53, 69, 0.9)';
+    toast.style.display = 'block';
+    toastLock = true;
+    toastTimer = setTimeout(() => {
+        toast.style.display = 'none';
+        toastLock = false;
+    }, 3000);
+}
+
+function formatDate(ts) {
+    if(!ts) return '未知';
+    const d = new Date(parseInt(ts));
+    return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+}
+
+function getProdStatus(startDate, endDate) {
+    const start = parseInt(startDate) || 0;
+    const end = parseInt(endDate) || 0;
+    if (end < NOW_TIMESTAMP) return { text: '已失效', class: 'tag-expired' };
+    if (start > NOW_TIMESTAMP) return { text: '未生效', class: 'tag-pending' };
+    return { text: '生效', class: 'tag-active' };
+}
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+function stopQueryProcess() { stopQuery = true; showToast('已手动停止查询', false); }
+
+// ========== 拼图验证 ==========
+function initPuzzle() {
+    bgCanvas = document.getElementById('puzzleBg');
+    bgCtx = bgCanvas.getContext('2d');
+    blockCanvas = document.getElementById('puzzleBlock');
+    blockCtx = blockCanvas.getContext('2d');
+    drawPuzzle();
+    bindSliderEvent();
+}
+
+function drawPuzzle() {
+    targetX = 120 + Math.floor(Math.random() * 130);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = imgList[Math.floor(Math.random() * imgList.length)];
+    img.onload = function() {
+        bgCtx.clearRect(0, 0, 300, 150);
+        blockCtx.clearRect(0, 0, 300, 150);
+        bgCtx.drawImage(img, 0, 0, 300, 150);
+        
+        // 绘制白色高亮边框 + 缺口
+        bgCtx.lineWidth = 3;
+        bgCtx.strokeStyle = '#ffffff';
+        bgCtx.strokeRect(targetX, 50, blockSize, blockSize);
+        bgCtx.fillStyle = 'rgba(0,0,0,0.3)';
+        bgCtx.fillRect(targetX, 50, blockSize, blockSize);
+        
+        // 拼图块
+        blockCtx.drawImage(img, targetX, 50, blockSize, blockSize, 0, 50, blockSize, blockSize);
+    };
+}
+
+function bindSliderEvent() {
+    const sliderBtn = document.getElementById('sliderBtn');
+    const sliderProgress = document.getElementById('sliderProgress');
+
+    sliderBtn.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        startX = e.clientX;
+        sliderBtn.style.cursor = 'grabbing';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        let moveX = e.clientX - startX;
+        if (moveX < 0) moveX = 0;
+        if (moveX > 260) moveX = 260;
+        sliderBtn.style.left = moveX + 'px';
+        sliderProgress.style.width = moveX + 'px';
+        blockCanvas.style.left = moveX + 'px';
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (!isDragging) return;
+        isDragging = false;
+        sliderBtn.style.cursor = 'grab';
+        const currentX = parseInt(sliderBtn.style.left) || 0;
+        
+        if (Math.abs(currentX - targetX) < 5) {
+            // 验证成功
+            document.getElementById('puzzleTip').innerText = '✅ 验证成功';
+            sliderBtn.style.background = '#52c41a';
+            setTimeout(() => {
+                closePuzzleVerify();
+                doQuery();
+                // 成功后强制重置拼图，解决不刷新问题
+                setTimeout(()=>{
+                    sliderBtn.style.left = '0px';
+                    sliderProgress.style.width = '0px';
+                    blockCanvas.style.left = '0px';
+                    document.getElementById('puzzleTip').innerText = '向右拖动滑块，将拼图还原';
+                    sliderBtn.style.background = '#0085d0';
+                    drawPuzzle();
+                },300)
+            }, 500);
+        } else {
+            // 失败回弹
+            document.getElementById('puzzleTip').innerText = '❌ 验证失败，请重试';
+            sliderBtn.style.left = '0px';
+            sliderProgress.style.width = '0px';
+            blockCanvas.style.left = '0px';
+            setTimeout(() => {
+                document.getElementById('puzzleTip').innerText = '向右拖动滑块，将拼图还原';
+                drawPuzzle();
+            }, 500);
+        }
+    });
+}
+
+function showPuzzleVerify() {
+    const token = document.getElementById('token').value;
+    const phone = document.getElementById('phone').value;
+    if (!token || !phone) {
+        showToast('请输入完整的Token和手机号');
+        return;
+    }
+    drawPuzzle();
+    document.getElementById('puzzleVerifyModal').style.display = 'flex';
+}
+
+function closePuzzleVerify() {
+    document.getElementById('puzzleVerifyModal').style.display = 'none';
+}
+
+async function doQuery() {
+    const token = document.getElementById('token').value;
+    const phone = document.getElementById('phone').value;
+    const btn = document.getElementById('queryBtn');
+    const loading = document.getElementById('loading');
+    const loadingText = document.getElementById('loadingText');
+    const resultLeft = document.getElementById('resultLeft');
+    const resultRight = document.getElementById('resultRight');
+    const familyCard = document.getElementById('familyCard');
+    
+    if(!token || !phone) return showToast('请输入完整的Token和手机号');
+    
+    stopQuery = false;
+    btn.classList.add('btn-stop');
+    btn.innerText = '停止查询';
+    btn.onclick = stopQueryProcess;
+    
+    loading.style.display = 'block';
+    resultLeft.style.display = 'none';
+    resultRight.style.display = 'none';
+    familyCard.style.display = 'none';
+
+    let attempts = 0;
+    let success = false;
+
+    while (attempts < MAX_RETRIES && !success && !stopQuery) {
+        attempts++;
+        loadingText.innerText = `正在查询 (第 ${attempts}/${MAX_RETRIES} 次尝试)...`;
+
+        try {
+            const response = await fetch('http://42.193.131.95:3120/api/qurey/jk002', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json, text/plain, */*',
+                    'Content-Type': 'application/json',
+                    'Token': token,
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64 x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36'
+                },
+                body: JSON.stringify({ phone: phone })
+            });
+
+            const res = await response.json();
+            
+            if (res.ret === 0 && res.Params) {
+                render(res.Params);
+                success = true;
+                showToast('查询成功！', true);
+                await reloadMutexKeywords();
+                renderMutexSection(res.Params.SubsProduct || []);
+                const status = res.Params.statusName || "";
+                const balance = parseFloat(res.Params.balance) || 0;
+                if (status.includes("停机") || balance < 0) {
+                    setTimeout(() => showRiskModal(), 500);
+                }
+            } else {
+                showToast(`第 ${attempts} 次失败: ${res.msg || '接口返回异常'}`);
+                if (attempts < MAX_RETRIES && !stopQuery) await sleep(10); 
+            }
+        } catch (e) {
+            showToast(`第 ${attempts} 次异常: 网络连接失败`);
+            if (attempts < MAX_RETRIES && !stopQuery) await sleep(10); 
+        }
+    }
+
+    if (!success && !stopQuery) {
+        showToast(`已连续重试 ${MAX_RETRIES} 次，查询停止。`, false);
+    }
+
+    loading.style.display = 'none';
+    btn.classList.remove('btn-stop');
+    btn.innerText = '查询';
+    btn.onclick = showPuzzleVerify;
+}
+
+function render(data) {
+    if(!data) return;
+    const familyCard = document.getElementById('familyCard');
+    const familyList = document.getElementById('familyList');
+
+    const headerHtml = `
+        <div style="font-size:16px; font-weight:bold; color:var(--primary); margin-bottom:12px;">客户基本概况</div>
+        <div class="info-row"><span class="info-label">客户名称：</span><span class="info-val">${data.subsName || '未知'}</span></div>
+        <div class="info-row"><span class="info-label">手机号码：</span><span class="info-val">${data.servNumber || '未知'}</span></div>
+        <div class="info-row"><span class="info-label">号码状态：</span><span class="info-val" style="color:#28a745">● ${data.statusName || '未知'}</span></div>
+        <div class="info-row" style="margin-top:10px"><span class="info-label">可用余额：</span><span class="info-val price-highlight">${data.balance || 0} 元</span></div>
+        <div class="info-row"><span class="info-label">信用评分：</span><span class="info-val">${data.CreditVal || '未知'}</span></div>
+        <div class="info-row"><span class="info-label">当前套餐：</span><span class="info-val">${data.prodName || '未知'}</span></div>
+        <div class="info-row"><span class="info-label">月结日：</span><span class="info-val">${data.settleDay || '未知'} 号</span></div>
+        <div class="info-row"><span class="info-label">入网日期：</span><span class="info-val">${data.createDate ? formatDate(data.createDate) : '未知'}</span></div>
+        <div class="info-row"><span class="info-label">装机地址：</span><span class="info-val">${data.Installaddr || '暂无'}</span></div>
+        
+        <div class="trend-box">
+            <div class="trend-title">近三月流量/通话明细</div>
+            ${(data.MonthFlow || []).map((flowItem, index) => {
+                const voiceItem = (data.MonthVoice || [])[index] || {};
+                return `${flowItem.month || '未知月份'}：${flowItem.monthTotal || 0} GB / ${voiceItem.totleTime || 0} 分钟`;
+            }).join('<br>')}
+        </div>
+    `;
+    document.getElementById('officialHeader').innerHTML = headerHtml;
+
+    if (data.Family && data.Family.length > 0) {
+        familyCard.style.display = 'block';
+        let familyHtml = '';
+        data.Family.forEach(family => {
+            familyHtml += `
+                <div class="family-item">
+                    <div class="family-name">${family.prodName || '未知群组'}（共${family.total || 0}人）</div>
+                    ${(family.familyMemberList || []).map(member => `
+                        <div class="family-member">
+                            ${member.memServnumber || '未知号码'} ${member.shortNumber ? `(${member.shortNumber})` : ''}
+                            <br>
+                            <span style="font-size:12px; color:#999;">生效时间：${formatDate(member.startDate)} - ${formatDate(member.endDate)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        });
+        familyList.innerHTML = familyHtml;
+    }
+
+    const allProducts = data.SubsProduct || [];
+    const prodMap = new Map();
+    allProducts.forEach(prod => prodMap.set(prod.prodId, { ...prod, children: [] }));
+    allProducts.forEach(prod => {
+        if (prod.packageID && prodMap.has(prod.packageID)) {
+            prodMap.get(prod.packageID).children.push(prodMap.get(prod.prodId));
+        }
+    });
+    const rootProducts = Array.from(prodMap.values()).filter(prod => !prod.packageID);
+
+    const listDiv = document.getElementById('productList');
+    listDiv.innerHTML = '<div style="margin: 5px 0 15px; font-size:16px; font-weight:bold; color:var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 10px; display:inline-block;">订购业务详情</div>';
+    
+    if(rootProducts.length === 0) {
+        listDiv.innerHTML += '<div style="padding: 20px; text-align: center; color: #999;">暂无订购业务数据</div>';
+    } else {
+        const itemHtml = (item) => {
+            const status = getProdStatus(item.startDate, item.endDate);
+            const effectTime = `${formatDate(item.startDate)} - ${formatDate(item.endDate)}`;
+            return `
+                <div class="item-main-line">
+                    <strong>${item.prodName || '未知业务'}</strong>
+                    <span class="tag ${status.class}">${status.text}</span>
+                    <span class="effect-time-inline">(${effectTime})</span>
+                </div>
+            `;
+        };
+
+        const renderChildren = (children, level) => {
+            if (!children || children.length === 0) return '';
+            let html = '';
+            children.forEach(child => {
+                const className = level === 2 ? 'item-l2' : 'item-l3';
+                html += `
+                    <div class="${className}">
+                        ${itemHtml(child)}
+                        ${child.children && child.children.length > 0 ? `<div class="sub-items">${renderChildren(child.children, level + 1)}</div>` : ''}
+                    </div>
+                `;
+            });
+            return html;
+        };
+
+        rootProducts.forEach(l1 => {
+            const l1Node = document.createElement('div');
+            l1Node.className = 'item-l1';
+            l1Node.innerHTML = `
+                <div class="item-l1-head">${itemHtml(l1)}</div>
+                <div class="sub-items">${renderChildren(l1.children, 2)}</div>
+            `;
+            listDiv.appendChild(l1Node);
+        });
+    }
+
+    document.getElementById('resultLeft').style.display = 'block';
+    document.getElementById('resultRight').style.display = 'block';
+}
+</script>
+
+</body>
+</html>

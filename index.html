@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>爆单符</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(-45deg, #000, #2c1810, #5a2a12, #8b4513);
+            background-size: 400% 400%;
+            animation: bgFlow 10s ease infinite;
+            overflow: hidden;
+        }
+
+        @keyframes bgFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 爆单符主体 */
+        .talisman {
+            width: 320px;
+            height: 480px;
+            background: linear-gradient(145deg, #fff8e1, #ffebcd);
+            border-radius: 12px;
+            border: 3px solid #ffd700;
+            position: relative;
+            box-shadow: 0 0 30px gold, 0 0 60px orange, 0 0 90px darkorange;
+            animation: glow 3s ease-in-out infinite alternate;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        @keyframes glow {
+            0% { box-shadow: 0 0 30px gold, 0 0 60px orange; }
+            100% { box-shadow: 0 0 50px gold, 0 0 100px darkorange; }
+        }
+
+        /* 核心大字 */
+        .text {
+            font-size: 90px;
+            font-weight: 900;
+            color: #d92121;
+            text-shadow: 0 0 15px #ff0000, 0 0 30px #ff4500;
+            animation: pulse 2s infinite alternate;
+            writing-mode: vertical-rl;
+            letter-spacing: 10px;
+        }
+
+        @keyframes pulse {
+            0% { filter: brightness(1); }
+            100% { filter: brightness(1.6); }
+        }
+
+        /* 星光粒子 */
+        .star {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: gold;
+            border-radius: 50%;
+            animation: float 4s infinite linear;
+        }
+
+        @keyframes float {
+            0%,100% { transform: translateY(0) scale(0.8); opacity: 0.7; }
+            50% { transform: translateY(-25px) scale(1.2); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="talisman">
+        <div class="text">爆单符</div>
+    </div>
+
+    <script>
+        // 生成浮动星光
+        const box = document.querySelector('.talisman');
+        for(let i = 0; i < 25; i++){
+            let star = document.createElement('div');
+            star.className = 'star';
+            star.style.left = Math.random() * 320 + 'px';
+            star.style.top = Math.random() * 480 + 'px';
+            star.style.animationDelay = Math.random() * 4 + 's';
+            box.appendChild(star);
+        }
+    </script>
+</body>
+</html>
